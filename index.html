@@ -1,0 +1,141 @@
+<html>
+
+	<head>
+
+	    <meta charset="utf-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	    <title></title>
+
+	    <link rel="icon" href="https://emagin.ca/wp-content/uploads/cropped-emagin-site-icon-32x32.png" sizes="32x32">
+	    <link rel="icon" href="https://emagin.ca/wp-content/uploads/cropped-emagin-site-icon-192x192.png" sizes="192x192">
+	    <link rel="apple-touch-icon-precomposed" href="http://emagin.ca/wp-content/uploads/2016/12/cropped-FaviconE-180x180.png" />
+
+	</head>
+
+	<body>
+	    
+	
+		<!-- JQUERY -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+		<!-- Google Maps -->
+		<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChAVeWn4OYB0sKtR0QN7IyYfYL85O3tQ8&callback=initMap&libraries=visualization">
+		</script>
+		
+		<!-- Highcharts -->
+		<script src="https://code.highcharts.com/highcharts.js"></script>
+        <script src="https://code.highcharts.com/modules/exporting.js"></script>
+        
+        <div id="meters" style="min-width: 310px; height: 400px; max-width: 800px;"></div>
+        <div id="meterNode" style="min-width: 310px; height: 400px; max-width: 800px;"></div>
+		
+		<script>
+            //$.getJSON("https://lilcortexbucket.blob.core.windows.net/public/meters.json", function(meterData) {
+            $.getJSON("meterData.json", function(meterData) {
+                var nodeData = [];
+                
+                for (var key in meterData) {
+                    if (meterData.hasOwnProperty(key)) {
+                        var node = meterData[key];
+                        
+                        nodeData.push({
+                            meter: key,
+                            meter_latitude: node.meter_latitude,
+                            meter_longitude: node.meter_longitude,
+                            threshold: node.threshold,
+                            demand_ts: node.demand_ts
+                        });
+                    }
+                }
+                
+                // Get the lat/long coords to show in the initial scatter plot
+                var scatterPointData = nodeData.map(i => [Number(i.meter_latitude), Number(i.meter_longitude)]);
+            
+                Highcharts.chart('meters', {
+                chart: {
+                    type: 'scatter'
+                },
+                title: {
+                    text: 'Test Title'
+                },
+                subtitle: {
+                    text: 'Test Subtitle'
+                },
+                xAxis: {
+                    title: {
+                        enabled: true,
+                        text: 'Latitude'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Longitude'
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        marker: {
+                            radius: 5,
+                            states: {
+                                hover: {
+                                    enabled: true,
+                                    lineColor: 'rgb(100,100,100)'
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                marker: {
+                                    enabled: false
+                                }
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>{series.name}</b><br>',
+                            pointFormat: '{point.x} lat, {point.y} long'
+                        }
+                    }
+                },
+                series: [{
+                    color: 'rgba(223, 83, 83, .5)',
+                    data: scatterPointData,
+                    point: {
+                        events: {
+                            click: function (e) {
+                                // Find node's data who was clicked
+                                var nodeToLoad = nodeData.find(i => i.meter_latitude == this.x && i.meter_longitude == this.y);
+                                var data = nodeToLoad.demand_ts.map(i => [i.timestamp, Number(i.demand_value)]);
+                            
+                                // Load up the second chart
+                                Highcharts.chart('meterNode', {
+                                    title: {
+                                        text: nodeToLoad.meter
+                                    },
+                                    
+                                    xAxis: {
+                                        title: {
+                                            text: 'Demand'
+                                        }
+                                    },
+
+                                    yAxis: {
+                                        title: {
+                                            text: 'Demand'
+                                        }
+                                    },
+
+                                    series: data
+                                });
+                            }
+                        }
+                    },
+                }]
+            });
+            });
+		</script>
+		
+		
+	</body>
+</html>
